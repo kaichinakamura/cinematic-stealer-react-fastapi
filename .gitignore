@@ -1,0 +1,38 @@
+# --- 全般 (OS・エディタ設定) ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# --- セキュリティ (絶対にアップロードしない！) ---
+.env
+.env.local
+.env.*.local
+*.pem
+secrets.yaml
+
+# --- Python (Backend) ---
+__pycache__/
+*.py[cod]
+*$py.class
+# 仮想環境 (Docker外で入れた場合用)
+venv/
+.venv/
+env/
+# pytestなどのキャッシュ
+.pytest_cache/
+
+# --- Node.js / React (Frontend) ---
+# ライブラリ本体 (超巨大なので除外必須)
+node_modules/
+# ビルド成果物
+dist/
+build/
+# ログファイル
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- Docker ---
+# もしDockerのマウントデータなどをローカルに保存している場合
+# db_data/ など、データを保存するフォルダがあればここに追記

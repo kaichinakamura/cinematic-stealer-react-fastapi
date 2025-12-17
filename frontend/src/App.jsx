@@ -9,7 +9,7 @@ if (!API_BASE_URL) {
   console.error("Error: VITE_API_URL is not set in environment variables.");
 }
 
-// ★追加: アルゴリズムの定義を定数として外に出し、再利用できるようにします
+// ★定数: アルゴリズム定義
 const ALGORITHMS = [
   {id: 'histogram', label: 'Histogram', desc: '色の分布を合わせます。最も自然な仕上がり。'},
   {id: 'reinhard', label: 'Reinhard', desc: '統計的な色移動。極端な色変化に強い。'},
@@ -271,56 +271,68 @@ function App() {
           </div>
         </header>
 
-        {/* D&D Area */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {[
-            { id: 'target', label: 'Target Image', sub: '変えたい画像', preview: targetPreview, color: 'text-purple-400', border: 'hover:border-purple-500/50 hover:bg-purple-500/5' },
-            { id: 'reference', label: 'Reference Image', sub: '憧れの色味', preview: refPreview, color: 'text-blue-400', border: 'hover:border-blue-500/50 hover:bg-blue-500/5' }
-          ].map((area) => (
-            <div key={area.id} className="space-y-3">
-              <h3 className={`font-bold flex items-center gap-2 ${area.color}`}>
-                <ImageIcon size={18} /> {area.label} <span className="text-zinc-600 text-xs font-normal">/ {area.sub}</span>
-              </h3>
-              <div 
-                className={`
-                  aspect-video rounded-2xl border-2 border-dashed border-zinc-800 bg-zinc-900/50 
-                  flex items-center justify-center overflow-hidden relative group transition-all duration-300
-                  ${area.border}
-                `}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => handleDrop(e, area.id)}
-              >
-                {area.preview ? (
-                  <>
-                    <img src={area.preview} className="w-full h-full object-contain z-10" alt={area.label} />
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-20 pointer-events-none">
-                      <p className="text-white font-medium">Replace Image</p>
+        {/* Step 1: D&D Area */}
+        <section className="space-y-6">
+          {/* ★追加: ステップ1のタイトル */}
+          <div className="flex items-center gap-3">
+            <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300 font-bold text-sm shadow-inner">1</div>
+            <h2 className="text-xl font-bold text-zinc-200">Upload Images</h2>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {[
+              { id: 'target', label: 'Target Image', sub: '変えたい画像', preview: targetPreview, color: 'text-purple-400', border: 'hover:border-purple-500/50 hover:bg-purple-500/5' },
+              { id: 'reference', label: 'Reference Image', sub: '憧れの色味', preview: refPreview, color: 'text-blue-400', border: 'hover:border-blue-500/50 hover:bg-blue-500/5' }
+            ].map((area) => (
+              <div key={area.id} className="space-y-3">
+                <h3 className={`font-bold flex items-center gap-2 ${area.color}`}>
+                  <ImageIcon size={18} /> {area.label} <span className="text-zinc-600 text-xs font-normal">/ {area.sub}</span>
+                </h3>
+                <div 
+                  className={`
+                    aspect-video rounded-2xl border-2 border-dashed border-zinc-800 bg-zinc-900/50 
+                    flex items-center justify-center overflow-hidden relative group transition-all duration-300
+                    ${area.border}
+                  `}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => handleDrop(e, area.id)}
+                >
+                  {area.preview ? (
+                    <>
+                      <img src={area.preview} className="w-full h-full object-contain z-10" alt={area.label} />
+                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-20 pointer-events-none">
+                        <p className="text-white font-medium">Replace Image</p>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-zinc-600 text-center pointer-events-none group-hover:text-zinc-400 transition-colors">
+                      <Download className="mx-auto mb-2 opacity-50" size={32} />
+                      <p className="text-sm">Drag & Drop or Click</p>
                     </div>
-                  </>
-                ) : (
-                  <div className="text-zinc-600 text-center pointer-events-none group-hover:text-zinc-400 transition-colors">
-                    <Download className="mx-auto mb-2 opacity-50" size={32} />
-                    <p className="text-sm">Drag & Drop or Click</p>
-                  </div>
-                )}
-                <input type="file" className="absolute inset-0 opacity-0 cursor-pointer z-50" onChange={(e) => handleDrop({preventDefault:()=>{}, dataTransfer:{files: e.target.files}}, area.id)} />
+                  )}
+                  <input type="file" className="absolute inset-0 opacity-0 cursor-pointer z-50" onChange={(e) => handleDrop({preventDefault:()=>{}, dataTransfer:{files: e.target.files}}, area.id)} />
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </section>
 
-        {/* Controls */}
+        {/* Step 2: Controls */}
         <section className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 shadow-xl">
+          {/* ★追加: ステップ2のタイトル */}
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-zinc-800">
+            <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300 font-bold text-sm shadow-inner">2</div>
+            <h2 className="text-xl font-bold text-zinc-200">Select & Create</h2>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
             <div className="md:col-span-7 space-y-3">
               <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Algorithm</label>
               <div className="flex flex-wrap gap-2">
-                {/* ★修正: マップ処理で ALGORITHMS 定数を使用 */}
                 {ALGORITHMS.map((m) => (
                   <label key={m.id} className={`relative group cursor-pointer px-4 py-2.5 rounded-lg border text-sm font-medium transition-all ${method === m.id ? 'bg-zinc-100 text-black border-zinc-100 shadow-[0_0_15px_rgba(255,255,255,0.2)]' : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200'}`}>
                     <input type="radio" name="method" value={m.id} checked={method === m.id} onChange={(e) => setMethod(e.target.value)} className="hidden" />
                     {m.label}
-                    {/* Tooltip (PC用) */}
                     <div className="hidden md:block absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-48 p-2.5 bg-zinc-950/95 text-zinc-300 text-xs rounded-lg border border-zinc-800 pointer-events-none opacity-0 group-hover:opacity-100 transition-all duration-200 z-50 text-center shadow-2xl translate-y-2 group-hover:translate-y-0 backdrop-blur-sm">
                       {m.desc}
                       <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-zinc-950/95"></div>
@@ -328,7 +340,6 @@ function App() {
                   </label>
                 ))}
               </div>
-              {/* ★追加: 選択中のアルゴリズム説明 (スマホ/全画面共通で表示) */}
               <p className="text-xs text-zinc-500 h-4 pl-1">
                 {ALGORITHMS.find(a => a.id === method)?.desc}
               </p>
@@ -351,11 +362,15 @@ function App() {
           </div>
         </section>
 
-        {/* Result Area */}
+        {/* Step 3: Result Area */}
         {processedPreview && (
           <section className="animate-in fade-in slide-in-from-bottom-8 duration-700 space-y-6">
             <div className="flex justify-between items-end">
-              <h2 className="text-2xl font-bold text-zinc-200">Result</h2>
+              {/* ★追加: ステップ3のバッジ（Resultタイトルに統合） */}
+              <div className="flex items-center gap-3">
+                <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300 font-bold text-sm shadow-inner">3</div>
+                <h2 className="text-2xl font-bold text-zinc-200">Result</h2>
+              </div>
               <button onClick={takeSnapshot} className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition border border-zinc-700">
                 <Camera size={16}/> Snapshot
               </button>

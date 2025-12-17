@@ -2,7 +2,7 @@ from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import Response, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from io import BytesIO
-from PIL import Image
+from PIL import Image, ImageOps  # ★修正1: ImageOpsを追加
 import sys
 import os
 
@@ -28,7 +28,10 @@ grader = ColorGradingEngine()
 lut_gen = LutGenerator()
 
 def load_image(file_bytes):
-    return Image.open(BytesIO(file_bytes)).convert("RGB")
+    # ★修正2: 画像を開いた直後にEXIF情報を元に回転させ、その後にRGB変換する
+    img = Image.open(BytesIO(file_bytes))
+    img = ImageOps.exif_transpose(img)
+    return img.convert("RGB")
 
 @app.post("/api/process")
 async def process_images(

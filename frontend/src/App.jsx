@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { Download, Trash2, Camera, RefreshCw, ArrowRight, Layers, Image as ImageIcon, Sparkles, Archive, Loader2 } from 'lucide-react';
-import JSZip from 'jszip'; // ★追加: ZIP用ライブラリ
+import { Download, Trash2, Camera, RefreshCw, ArrowRight, Layers, Image as ImageIcon, Sparkles, Archive, Loader2, HelpCircle, X } from 'lucide-react';
+import JSZip from 'jszip'; 
 
 // const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 const API_BASE_URL = import.meta.env.VITE_API_URL;
@@ -8,6 +8,14 @@ const API_BASE_URL = import.meta.env.VITE_API_URL;
 if (!API_BASE_URL) {
   console.error("Error: VITE_API_URL is not set in environment variables.");
 }
+
+// ★定数: アルゴリズム定義
+const ALGORITHMS = [
+  {id: 'histogram', label: 'Histogram', desc: '色の分布を合わせます。最も自然な仕上がり。'},
+  {id: 'reinhard', label: 'Reinhard', desc: '統計的な色移動。極端な色変化に強い。'},
+  {id: 'covariance', label: 'Covariance', desc: '色の相関を維持。鮮やかさを保ちたい場合に。'},
+  {id: 'kmeans', label: 'Clustering AI', desc: '主要色を解析して置換。ポスターのような効果。'},
+];
 
 // ==========================================
 // コンポーネント: 比較スライダー
@@ -44,31 +52,17 @@ const CompareSlider = ({ original, processed, opacity }) => {
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      {/* 【修正のポイント】 レイヤーを3層構造にします 
-      */}
-
-      {/* 1. 最下層 (Base): 元画像 
-          → Opacityが0になったとき、これが見えるようになります
-      */}
       <img 
         src={original} 
         alt="Original Base" 
         className="absolute inset-0 w-full h-full object-contain pointer-events-none" 
       />
-
-      {/* 2. 中間層 (Effect): 処理後画像 (Result)
-          → Opacityで制御され、最下層の元画像とブレンドされます
-      */}
       <img 
         src={processed} 
         alt="Processed Overlay" 
         className="absolute inset-0 w-full h-full object-contain pointer-events-none" 
         style={{ opacity: opacity }} 
       />
-
-      {/* 3. 最上層 (Compare): 左側の「元画像」表示用
-          → clipPathで左側だけを表示し、右側(1と2のブレンド結果)を見せます
-      */}
       <div 
         className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none"
         style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
@@ -78,11 +72,8 @@ const CompareSlider = ({ original, processed, opacity }) => {
           alt="Original Left" 
           className="absolute inset-0 w-full h-full object-contain"
         />
-        {/* 境界線を見やすくするためのシャドウ */}
         <div className="absolute inset-0 shadow-[0_0_20px_rgba(0,0,0,0.5)] pointer-events-none"></div>
       </div>
-
-      {/* スライダーのハンドル */}
       <div 
         className="absolute top-0 bottom-0 w-0.5 bg-white cursor-col-resize z-20 pointer-events-none drop-shadow-[0_0_2px_rgba(0,0,0,0.8)]"
         style={{ left: `${sliderPosition}%` }}
@@ -91,8 +82,6 @@ const CompareSlider = ({ original, processed, opacity }) => {
           ↔
         </div>
       </div>
-      
-      {/* ラベル */}
       <div className="absolute bottom-4 left-4 bg-black/60 text-white text-xs px-2 py-1 rounded pointer-events-none backdrop-blur-sm border border-white/10">
         Original
       </div>
@@ -117,9 +106,8 @@ function App() {
   const [processedPreview, setProcessedPreview] = useState(null);
   const [blendOpacity, setBlendOpacity] = useState(0.8);
   const [snapshots, setSnapshots] = useState([]);
-  
-  // ★追加: ZIP作成中のローディング状態
   const [isZipping, setIsZipping] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
 
   const handleDrop = useCallback((e, type) => {
     e.preventDefault();
@@ -208,7 +196,6 @@ function App() {
     }
   };
 
-  // ★追加: すべてのスナップショットをZIPでダウンロード
   const downloadAllAsZip = async () => {
     if (snapshots.length === 0) return;
     setIsZipping(true);
@@ -216,19 +203,13 @@ function App() {
     const folder = zip.folder("cinematic_snapshots");
 
     try {
-      // Promise.allで並列処理（画像取得 & LUT生成）
       await Promise.all(snapshots.map(async (snap, index) => {
         const prefix = `snap_${index + 1}_${snap.method}`;
-
-        // 1. 画像のバイナリを取得 (Blob URLからfetch)
         const imgBlob = await fetch(snap.processed).then(r => r.blob());
         folder.file(`${prefix}.png`, imgBlob);
-
-        // 2. メタデータテキスト
         const info = `Method: ${snap.method}\nIntensity: ${snap.intensity}\nPreserve Luminance: ${snap.preserveLum}\nDate: ${snap.date}`;
         folder.file(`${prefix}_info.txt`, info);
 
-        // 3. APIを叩いてLUT (.cube) を生成して取得
         const formData = new FormData();
         formData.append("reference", snap.refFile);
         formData.append("method", snap.method);
@@ -244,7 +225,6 @@ function App() {
         }
       }));
 
-      // ZIPを生成してダウンロード
       const content = await zip.generateAsync({ type: "blob" });
       const url = window.URL.createObjectURL(content);
       const a = document.createElement('a');
@@ -277,69 +257,129 @@ function App() {
               <p className="text-zinc-500 text-sm">AI-Powered Color Grading Tool</p>
             </div>
           </div>
-          <button onClick={handleSwap} className="flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-300 px-5 py-2.5 rounded-full transition-all hover:border-zinc-500 active:scale-95 text-sm font-medium">
-            <RefreshCw size={16} /> Swap Images
-          </button>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setShowHelp(true)} 
+              className="p-2.5 rounded-full text-zinc-400 hover:text-white hover:bg-zinc-900 border border-transparent hover:border-zinc-700 transition-all"
+              title="How to use"
+            >
+              <HelpCircle size={20} />
+            </button>
+            <button onClick={handleSwap} className="flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-300 px-5 py-2.5 rounded-full transition-all hover:border-zinc-500 active:scale-95 text-sm font-medium">
+              <RefreshCw size={16} /> Swap Images
+            </button>
+          </div>
         </header>
 
-        {/* D&D Area */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {[
-            { id: 'target', label: 'Target Image', sub: '変えたい画像', preview: targetPreview, color: 'text-purple-400', border: 'hover:border-purple-500/50 hover:bg-purple-500/5' },
-            { id: 'reference', label: 'Reference Image', sub: '憧れの色味', preview: refPreview, color: 'text-blue-400', border: 'hover:border-blue-500/50 hover:bg-blue-500/5' }
-          ].map((area) => (
-            <div key={area.id} className="space-y-3">
-              <h3 className={`font-bold flex items-center gap-2 ${area.color}`}>
-                <ImageIcon size={18} /> {area.label} <span className="text-zinc-600 text-xs font-normal">/ {area.sub}</span>
-              </h3>
-              <div 
-                className={`
-                  aspect-video rounded-2xl border-2 border-dashed border-zinc-800 bg-zinc-900/50 
-                  flex items-center justify-center overflow-hidden relative group transition-all duration-300
-                  ${area.border}
-                `}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => handleDrop(e, area.id)}
-              >
-                {area.preview ? (
-                  <>
-                    <img src={area.preview} className="w-full h-full object-contain z-10" alt={area.label} />
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-20 pointer-events-none">
-                      <p className="text-white font-medium">Replace Image</p>
+        {/* Step 1: D&D Area */}
+        <section className="space-y-6">
+          <div className="flex items-center gap-3">
+            <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300 font-bold text-sm shadow-inner">1</div>
+            <h2 className="text-xl font-bold text-zinc-200">Upload Images</h2>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {[
+              { id: 'target', label: 'Target Image', sub: '変えたい画像', preview: targetPreview, color: 'text-purple-400', border: 'hover:border-purple-500/50 hover:bg-purple-500/5' },
+              { id: 'reference', label: 'Reference Image', sub: '憧れの色味', preview: refPreview, color: 'text-blue-400', border: 'hover:border-blue-500/50 hover:bg-blue-500/5' }
+            ].map((area) => (
+              <div key={area.id} className="space-y-3">
+                <h3 className={`font-bold flex items-center gap-2 ${area.color}`}>
+                  <ImageIcon size={18} /> {area.label} <span className="text-zinc-600 text-xs font-normal">/ {area.sub}</span>
+                </h3>
+                <div 
+                  className={`
+                    aspect-video rounded-2xl border-2 border-dashed border-zinc-800 bg-zinc-900/50 
+                    flex items-center justify-center overflow-hidden relative group transition-all duration-300
+                    ${area.border}
+                  `}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => handleDrop(e, area.id)}
+                >
+                  {area.preview ? (
+                    <>
+                      <img src={area.preview} className="w-full h-full object-contain z-10" alt={area.label} />
+                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-20 pointer-events-none">
+                        <p className="text-white font-medium">Replace Image</p>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-zinc-600 text-center pointer-events-none group-hover:text-zinc-400 transition-colors">
+                      <Download className="mx-auto mb-2 opacity-50" size={32} />
+                      <p className="text-sm">Drag & Drop or Click</p>
                     </div>
-                  </>
-                ) : (
-                  <div className="text-zinc-600 text-center pointer-events-none group-hover:text-zinc-400 transition-colors">
-                    <Download className="mx-auto mb-2 opacity-50" size={32} />
-                    <p className="text-sm">Drag & Drop or Click</p>
-                  </div>
-                )}
-                <input type="file" className="absolute inset-0 opacity-0 cursor-pointer z-50" onChange={(e) => handleDrop({preventDefault:()=>{}, dataTransfer:{files: e.target.files}}, area.id)} />
+                  )}
+                  <input type="file" className="absolute inset-0 opacity-0 cursor-pointer z-50" onChange={(e) => handleDrop({preventDefault:()=>{}, dataTransfer:{files: e.target.files}}, area.id)} />
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </section>
 
-        {/* Controls */}
+        {/* Step 2: Controls */}
         <section className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 shadow-xl">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-zinc-800">
+            <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300 font-bold text-sm shadow-inner">2</div>
+            <h2 className="text-xl font-bold text-zinc-200">Select & Create</h2>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
             <div className="md:col-span-7 space-y-3">
               <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Algorithm</label>
               <div className="flex flex-wrap gap-2">
-                {[{id: 'histogram', label: 'Histogram'},{id: 'reinhard', label: 'Reinhard'},{id: 'covariance', label: 'Covariance'},{id: 'kmeans', label: 'Clustering AI'},].map((m) => (
-                  <label key={m.id} className={`cursor-pointer px-4 py-2.5 rounded-lg border text-sm font-medium transition-all ${method === m.id ? 'bg-zinc-100 text-black border-zinc-100 shadow-[0_0_15px_rgba(255,255,255,0.2)]' : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200'}`}>
-                    <input type="radio" name="method" value={m.id} checked={method === m.id} onChange={(e) => setMethod(e.target.value)} className="hidden" />{m.label}
+                {ALGORITHMS.map((m) => (
+                  <label key={m.id} className={`relative group cursor-pointer px-4 py-2.5 rounded-lg border text-sm font-medium transition-all ${method === m.id ? 'bg-zinc-100 text-black border-zinc-100 shadow-[0_0_15px_rgba(255,255,255,0.2)]' : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200'}`}>
+                    <input type="radio" name="method" value={m.id} checked={method === m.id} onChange={(e) => setMethod(e.target.value)} className="hidden" />
+                    {m.label}
+                    <div className="hidden md:block absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-48 p-2.5 bg-zinc-950/95 text-zinc-300 text-xs rounded-lg border border-zinc-800 pointer-events-none opacity-0 group-hover:opacity-100 transition-all duration-200 z-50 text-center shadow-2xl translate-y-2 group-hover:translate-y-0 backdrop-blur-sm">
+                      {m.desc}
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-zinc-950/95"></div>
+                    </div>
                   </label>
                 ))}
               </div>
+              <p className="text-xs text-zinc-500 h-4 pl-1">
+                {ALGORITHMS.find(a => a.id === method)?.desc}
+              </p>
             </div>
+            
             <div className="md:col-span-3 flex items-center">
-              <label className="flex items-center gap-3 cursor-pointer select-none group">
-                <div className={`w-5 h-5 rounded flex items-center justify-center border transition-colors ${preserveLum ? 'bg-purple-500 border-purple-500' : 'bg-zinc-800 border-zinc-600 group-hover:border-zinc-500'}`}>
-                  {preserveLum && <ArrowRight className="text-white rotate-[-45deg]" size={14} strokeWidth={4} />}
+              {/* ★修正: スマホ対応（常に表示）とPC対応（ホバー表示）を両立 */}
+              <label className="flex flex-wrap md:flex-nowrap items-center gap-3 cursor-pointer select-none group relative w-full md:w-auto">
+                <div className="flex items-center gap-3">
+                  <div className={`w-5 h-5 flex-shrink-0 rounded flex items-center justify-center border transition-colors ${preserveLum ? 'bg-purple-500 border-purple-500' : 'bg-zinc-800 border-zinc-600 group-hover:border-zinc-500'}`}>
+                    {preserveLum && <ArrowRight className="text-white rotate-[-45deg]" size={14} strokeWidth={4} />}
+                  </div>
+                  <input type="checkbox" checked={preserveLum} onChange={(e) => setPreserveLum(e.target.checked)} className="hidden" />
+                  <span className="text-zinc-300 text-sm group-hover:text-white transition-colors">
+                    Preserve Luminance<br/>
+                    <span className="text-xs text-zinc-500">明るさを維持 (色のみ適用)</span>
+                  </span>
                 </div>
-                <input type="checkbox" checked={preserveLum} onChange={(e) => setPreserveLum(e.target.checked)} className="hidden" />
-                <span className="text-zinc-300 text-sm group-hover:text-white transition-colors">Preserve Luminance<br/><span className="text-xs text-zinc-500">明るさを維持</span></span>
+                
+                {/* Tooltip for Checkbox 
+                    - static block mt-2: スマホ用（下に常に表示）
+                    - md:absolute md:bottom-full: PC用（ホバーで上に表示）
+                */}
+                <div className="
+                  static block mt-2 w-full text-left
+                  md:absolute md:bottom-full md:left-1/2 md:-translate-x-1/2 md:mb-3 md:w-64 md:text-center md:mt-0
+                  p-3 bg-zinc-950/95 text-zinc-300 text-xs rounded-lg border border-zinc-800 
+                  md:pointer-events-none 
+                  opacity-100 md:opacity-0 md:group-hover:opacity-100 
+                  transition-all duration-200 z-50 shadow-2xl 
+                  md:translate-y-2 md:group-hover:translate-y-0 backdrop-blur-sm
+                ">
+                  <div className="space-y-1">
+                    <p><span className="text-purple-400 font-bold">ON:</span> 明るさは維持し、色味だけ適用。</p>
+                    <p><span className="text-zinc-500 font-bold">OFF:</span> 明るさもリファレンスに合わせます。</p>
+                  </div>
+                  <div className="mt-2 text-zinc-500 text-[10px] border-t border-zinc-800 pt-1">
+                    ※画像により結果が大きく変わるため、切り替えて試すのがおすすめです。
+                  </div>
+                  {/* 吹き出しの三角（PCのみ表示） */}
+                  <div className="hidden md:block absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-zinc-950/95"></div>
+                </div>
               </label>
             </div>
             <div className="md:col-span-2">
@@ -350,11 +390,14 @@ function App() {
           </div>
         </section>
 
-        {/* Result Area */}
+        {/* Step 3: Result Area */}
         {processedPreview && (
           <section className="animate-in fade-in slide-in-from-bottom-8 duration-700 space-y-6">
             <div className="flex justify-between items-end">
-              <h2 className="text-2xl font-bold text-zinc-200">Result</h2>
+              <div className="flex items-center gap-3">
+                <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300 font-bold text-sm shadow-inner">3</div>
+                <h2 className="text-2xl font-bold text-zinc-200">Result</h2>
+              </div>
               <button onClick={takeSnapshot} className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition border border-zinc-700">
                 <Camera size={16}/> Snapshot
               </button>
@@ -378,7 +421,6 @@ function App() {
         {/* Snapshots */}
         {snapshots.length > 0 && (
           <section className="pt-8 border-t border-zinc-800">
-            {/* ★修正: ZIPダウンロードボタンを追加 */}
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold flex items-center gap-2 text-zinc-300">
                 Snapshots <span className="bg-zinc-800 text-xs px-2 py-0.5 rounded-full text-zinc-500">{snapshots.length}</span>
@@ -415,7 +457,6 @@ function App() {
                       </button>
                     </div>
                     
-                    {/* ★修正: Luminance情報を表示に追加 */}
                     <div className="flex flex-wrap items-center gap-2 mb-4">
                       <span className="text-xs font-bold px-2 py-0.5 bg-zinc-800 text-zinc-300 rounded uppercase">{snap.method}</span>
                       <span className="text-xs text-zinc-500">{Math.round(snap.intensity * 100)}%</span>
@@ -438,6 +479,70 @@ function App() {
             </div>
           </section>
         )}
+      
+        {/* Help Modal */}
+        {showHelp && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+            <div className="bg-zinc-900 border border-zinc-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative">
+              <button 
+                onClick={() => setShowHelp(false)}
+                className="absolute top-4 right-4 text-zinc-500 hover:text-white transition"
+              >
+                <X size={20} />
+              </button>
+              
+              <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                <Sparkles className="text-purple-500" size={20}/> Quick Guide
+              </h2>
+              
+              <div className="space-y-6">
+                <div className="flex gap-4">
+                  <div className="flex-shrink-0 w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center font-bold text-zinc-400 border border-zinc-700">1</div>
+                  <div>
+                    <h3 className="text-zinc-200 font-bold mb-1">Upload Images</h3>
+                    <p className="text-zinc-400 text-sm leading-relaxed">
+                      <span className="text-purple-400 font-medium">Target</span>（変えたい画像）と
+                      <span className="text-blue-400 font-medium"> Reference</span>（真似したい色味）
+                      をそれぞれドラッグ&ドロップします。
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex gap-4">
+                  <div className="flex-shrink-0 w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center font-bold text-zinc-400 border border-zinc-700">2</div>
+                  <div>
+                    <h3 className="text-zinc-200 font-bold mb-1">Select & Create</h3>
+                    <p className="text-zinc-400 text-sm leading-relaxed">
+                      好みのAlgorithmを選び、<span className="text-zinc-200 bg-zinc-800 px-1.5 py-0.5 rounded text-xs border border-zinc-700">Create Result</span> を押します。
+                      Histogramが最も汎用的でおすすめです。
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <div className="flex-shrink-0 w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center font-bold text-zinc-400 border border-zinc-700">3</div>
+                  <div>
+                    <h3 className="text-zinc-200 font-bold mb-1">Snapshot & LUT</h3>
+                    <p className="text-zinc-400 text-sm leading-relaxed">
+                      結果が気に入ればSnapshotで保存。
+                      あとから画像や3D LUT (.cube) としてダウンロードできます。
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8 pt-4 border-t border-zinc-800 flex justify-end">
+                <button 
+                  onClick={() => setShowHelp(false)}
+                  className="bg-zinc-100 text-zinc-900 font-bold py-2 px-6 rounded-full hover:bg-zinc-300 transition"
+                >
+                  OK
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );

@@ -273,7 +273,6 @@ function App() {
 
         {/* Step 1: D&D Area */}
         <section className="space-y-6">
-          {/* ★追加: ステップ1のタイトル */}
           <div className="flex items-center gap-3">
             <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300 font-bold text-sm shadow-inner">1</div>
             <h2 className="text-xl font-bold text-zinc-200">Upload Images</h2>
@@ -319,7 +318,6 @@ function App() {
 
         {/* Step 2: Controls */}
         <section className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 shadow-xl">
-          {/* ★追加: ステップ2のタイトル */}
           <div className="flex items-center gap-3 mb-6 pb-4 border-b border-zinc-800">
             <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300 font-bold text-sm shadow-inner">2</div>
             <h2 className="text-xl font-bold text-zinc-200">Select & Create</h2>
@@ -346,12 +344,42 @@ function App() {
             </div>
             
             <div className="md:col-span-3 flex items-center">
-              <label className="flex items-center gap-3 cursor-pointer select-none group">
-                <div className={`w-5 h-5 rounded flex items-center justify-center border transition-colors ${preserveLum ? 'bg-purple-500 border-purple-500' : 'bg-zinc-800 border-zinc-600 group-hover:border-zinc-500'}`}>
-                  {preserveLum && <ArrowRight className="text-white rotate-[-45deg]" size={14} strokeWidth={4} />}
+              {/* ★修正: スマホ対応（常に表示）とPC対応（ホバー表示）を両立 */}
+              <label className="flex flex-wrap md:flex-nowrap items-center gap-3 cursor-pointer select-none group relative w-full md:w-auto">
+                <div className="flex items-center gap-3">
+                  <div className={`w-5 h-5 flex-shrink-0 rounded flex items-center justify-center border transition-colors ${preserveLum ? 'bg-purple-500 border-purple-500' : 'bg-zinc-800 border-zinc-600 group-hover:border-zinc-500'}`}>
+                    {preserveLum && <ArrowRight className="text-white rotate-[-45deg]" size={14} strokeWidth={4} />}
+                  </div>
+                  <input type="checkbox" checked={preserveLum} onChange={(e) => setPreserveLum(e.target.checked)} className="hidden" />
+                  <span className="text-zinc-300 text-sm group-hover:text-white transition-colors">
+                    Preserve Luminance<br/>
+                    <span className="text-xs text-zinc-500">明るさを維持 (色のみ適用)</span>
+                  </span>
                 </div>
-                <input type="checkbox" checked={preserveLum} onChange={(e) => setPreserveLum(e.target.checked)} className="hidden" />
-                <span className="text-zinc-300 text-sm group-hover:text-white transition-colors">Preserve Luminance<br/><span className="text-xs text-zinc-500">明るさを維持</span></span>
+                
+                {/* Tooltip for Checkbox 
+                    - static block mt-2: スマホ用（下に常に表示）
+                    - md:absolute md:bottom-full: PC用（ホバーで上に表示）
+                */}
+                <div className="
+                  static block mt-2 w-full text-left
+                  md:absolute md:bottom-full md:left-1/2 md:-translate-x-1/2 md:mb-3 md:w-64 md:text-center md:mt-0
+                  p-3 bg-zinc-950/95 text-zinc-300 text-xs rounded-lg border border-zinc-800 
+                  md:pointer-events-none 
+                  opacity-100 md:opacity-0 md:group-hover:opacity-100 
+                  transition-all duration-200 z-50 shadow-2xl 
+                  md:translate-y-2 md:group-hover:translate-y-0 backdrop-blur-sm
+                ">
+                  <div className="space-y-1">
+                    <p><span className="text-purple-400 font-bold">ON:</span> 明るさは維持し、色味だけ適用。</p>
+                    <p><span className="text-zinc-500 font-bold">OFF:</span> 明るさもリファレンスに合わせます。</p>
+                  </div>
+                  <div className="mt-2 text-zinc-500 text-[10px] border-t border-zinc-800 pt-1">
+                    ※画像により結果が大きく変わるため、切り替えて試すのがおすすめです。
+                  </div>
+                  {/* 吹き出しの三角（PCのみ表示） */}
+                  <div className="hidden md:block absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-zinc-950/95"></div>
+                </div>
               </label>
             </div>
             <div className="md:col-span-2">
@@ -366,7 +394,6 @@ function App() {
         {processedPreview && (
           <section className="animate-in fade-in slide-in-from-bottom-8 duration-700 space-y-6">
             <div className="flex justify-between items-end">
-              {/* ★追加: ステップ3のバッジ（Resultタイトルに統合） */}
               <div className="flex items-center gap-3">
                 <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300 font-bold text-sm shadow-inner">3</div>
                 <h2 className="text-2xl font-bold text-zinc-200">Result</h2>

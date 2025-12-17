@@ -2,6 +2,13 @@ import React, { useState, useCallback, useRef } from 'react';
 import { Download, Trash2, Camera, RefreshCw, ArrowRight, Layers, Image as ImageIcon, Sparkles, Archive, Loader2 } from 'lucide-react';
 import JSZip from 'jszip'; // ★追加: ZIP用ライブラリ
 
+// const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const API_BASE_URL = import.meta.env.VITE_API_URL;
+
+if (!API_BASE_URL) {
+  console.error("Error: VITE_API_URL is not set in environment variables.");
+}
+
 // ==========================================
 // コンポーネント: 比較スライダー
 // ==========================================
@@ -148,7 +155,7 @@ function App() {
     formData.append("preserve_luminance", preserveLum);
 
     try {
-      const res = await fetch("http://localhost:8000/api/process", {
+      const res = await fetch(`${API_BASE_URL}/api/process`, {
         method: "POST",
         body: formData,
       });
@@ -186,7 +193,7 @@ function App() {
     formData.append("intensity", snap.intensity);
 
     try {
-      const res = await fetch("http://localhost:8000/api/generate_lut", {
+      const res = await fetch(`${API_BASE_URL}/api/generate_lut`, {
         method: "POST",
         body: formData,
       });

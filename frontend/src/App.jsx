@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { Download, Trash2, Camera, RefreshCw, ArrowRight, Layers, Image as ImageIcon, Sparkles, Archive, Loader2, HelpCircle, X } from 'lucide-react';
-import JSZip from 'jszip'; // ★追加: ZIP用ライブラリ
+import JSZip from 'jszip'; 
 
 // const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 const API_BASE_URL = import.meta.env.VITE_API_URL;
@@ -8,6 +8,14 @@ const API_BASE_URL = import.meta.env.VITE_API_URL;
 if (!API_BASE_URL) {
   console.error("Error: VITE_API_URL is not set in environment variables.");
 }
+
+// ★追加: アルゴリズムの定義を定数として外に出し、再利用できるようにします
+const ALGORITHMS = [
+  {id: 'histogram', label: 'Histogram', desc: '色の分布を合わせます。最も自然な仕上がり。'},
+  {id: 'reinhard', label: 'Reinhard', desc: '統計的な色移動。極端な色変化に強い。'},
+  {id: 'covariance', label: 'Covariance', desc: '色の相関を維持。鮮やかさを保ちたい場合に。'},
+  {id: 'kmeans', label: 'Clustering AI', desc: '主要色を解析して置換。ポスターのような効果。'},
+];
 
 // ==========================================
 // コンポーネント: 比較スライダー
@@ -44,31 +52,17 @@ const CompareSlider = ({ original, processed, opacity }) => {
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      {/* 【修正のポイント】 レイヤーを3層構造にします 
-      */}
-
-      {/* 1. 最下層 (Base): 元画像 
-          → Opacityが0になったとき、これが見えるようになります
-      */}
       <img 
         src={original} 
         alt="Original Base" 
         className="absolute inset-0 w-full h-full object-contain pointer-events-none" 
       />
-
-      {/* 2. 中間層 (Effect): 処理後画像 (Result)
-          → Opacityで制御され、最下層の元画像とブレンドされます
-      */}
       <img 
         src={processed} 
         alt="Processed Overlay" 
         className="absolute inset-0 w-full h-full object-contain pointer-events-none" 
         style={{ opacity: opacity }} 
       />
-
-      {/* 3. 最上層 (Compare): 左側の「元画像」表示用
-          → clipPathで左側だけを表示し、右側(1と2のブレンド結果)を見せます
-      */}
       <div 
         className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none"
         style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
@@ -78,11 +72,8 @@ const CompareSlider = ({ original, processed, opacity }) => {
           alt="Original Left" 
           className="absolute inset-0 w-full h-full object-contain"
         />
-        {/* 境界線を見やすくするためのシャドウ */}
         <div className="absolute inset-0 shadow-[0_0_20px_rgba(0,0,0,0.5)] pointer-events-none"></div>
       </div>
-
-      {/* スライダーのハンドル */}
       <div 
         className="absolute top-0 bottom-0 w-0.5 bg-white cursor-col-resize z-20 pointer-events-none drop-shadow-[0_0_2px_rgba(0,0,0,0.8)]"
         style={{ left: `${sliderPosition}%` }}
@@ -91,8 +82,6 @@ const CompareSlider = ({ original, processed, opacity }) => {
           ↔
         </div>
       </div>
-      
-      {/* ラベル */}
       <div className="absolute bottom-4 left-4 bg-black/60 text-white text-xs px-2 py-1 rounded pointer-events-none backdrop-blur-sm border border-white/10">
         Original
       </div>
@@ -117,10 +106,7 @@ function App() {
   const [processedPreview, setProcessedPreview] = useState(null);
   const [blendOpacity, setBlendOpacity] = useState(0.8);
   const [snapshots, setSnapshots] = useState([]);
-  
-  // ★追加: ZIP作成中のローディング状態
   const [isZipping, setIsZipping] = useState(false);
-  // ★追加: ヘルプモーダルの表示状態
   const [showHelp, setShowHelp] = useState(false);
 
   const handleDrop = useCallback((e, type) => {
@@ -210,7 +196,6 @@ function App() {
     }
   };
 
-  // ★追加: すべてのスナップショットをZIPでダウンロード
   const downloadAllAsZip = async () => {
     if (snapshots.length === 0) return;
     setIsZipping(true);
@@ -218,19 +203,13 @@ function App() {
     const folder = zip.folder("cinematic_snapshots");
 
     try {
-      // Promise.allで並列処理（画像取得 & LUT生成）
       await Promise.all(snapshots.map(async (snap, index) => {
         const prefix = `snap_${index + 1}_${snap.method}`;
-
-        // 1. 画像のバイナリを取得 (Blob URLからfetch)
         const imgBlob = await fetch(snap.processed).then(r => r.blob());
         folder.file(`${prefix}.png`, imgBlob);
-
-        // 2. メタデータテキスト
         const info = `Method: ${snap.method}\nIntensity: ${snap.intensity}\nPreserve Luminance: ${snap.preserveLum}\nDate: ${snap.date}`;
         folder.file(`${prefix}_info.txt`, info);
 
-        // 3. APIを叩いてLUT (.cube) を生成して取得
         const formData = new FormData();
         formData.append("reference", snap.refFile);
         formData.append("method", snap.method);
@@ -246,7 +225,6 @@ function App() {
         }
       }));
 
-      // ZIPを生成してダウンロード
       const content = await zip.generateAsync({ type: "blob" });
       const url = window.URL.createObjectURL(content);
       const a = document.createElement('a');
@@ -279,7 +257,6 @@ function App() {
               <p className="text-zinc-500 text-sm">AI-Powered Color Grading Tool</p>
             </div>
           </div>
-          {/* ★修正: ヘルプボタンとSwapボタンを並べる */}
           <div className="flex items-center gap-3">
             <button 
               onClick={() => setShowHelp(true)} 
@@ -338,13 +315,25 @@ function App() {
             <div className="md:col-span-7 space-y-3">
               <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Algorithm</label>
               <div className="flex flex-wrap gap-2">
-                {[{id: 'histogram', label: 'Histogram'},{id: 'reinhard', label: 'Reinhard'},{id: 'covariance', label: 'Covariance'},{id: 'kmeans', label: 'Clustering AI'},].map((m) => (
-                  <label key={m.id} className={`cursor-pointer px-4 py-2.5 rounded-lg border text-sm font-medium transition-all ${method === m.id ? 'bg-zinc-100 text-black border-zinc-100 shadow-[0_0_15px_rgba(255,255,255,0.2)]' : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200'}`}>
-                    <input type="radio" name="method" value={m.id} checked={method === m.id} onChange={(e) => setMethod(e.target.value)} className="hidden" />{m.label}
+                {/* ★修正: マップ処理で ALGORITHMS 定数を使用 */}
+                {ALGORITHMS.map((m) => (
+                  <label key={m.id} className={`relative group cursor-pointer px-4 py-2.5 rounded-lg border text-sm font-medium transition-all ${method === m.id ? 'bg-zinc-100 text-black border-zinc-100 shadow-[0_0_15px_rgba(255,255,255,0.2)]' : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200'}`}>
+                    <input type="radio" name="method" value={m.id} checked={method === m.id} onChange={(e) => setMethod(e.target.value)} className="hidden" />
+                    {m.label}
+                    {/* Tooltip (PC用) */}
+                    <div className="hidden md:block absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-48 p-2.5 bg-zinc-950/95 text-zinc-300 text-xs rounded-lg border border-zinc-800 pointer-events-none opacity-0 group-hover:opacity-100 transition-all duration-200 z-50 text-center shadow-2xl translate-y-2 group-hover:translate-y-0 backdrop-blur-sm">
+                      {m.desc}
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-zinc-950/95"></div>
+                    </div>
                   </label>
                 ))}
               </div>
+              {/* ★追加: 選択中のアルゴリズム説明 (スマホ/全画面共通で表示) */}
+              <p className="text-xs text-zinc-500 h-4 pl-1">
+                {ALGORITHMS.find(a => a.id === method)?.desc}
+              </p>
             </div>
+            
             <div className="md:col-span-3 flex items-center">
               <label className="flex items-center gap-3 cursor-pointer select-none group">
                 <div className={`w-5 h-5 rounded flex items-center justify-center border transition-colors ${preserveLum ? 'bg-purple-500 border-purple-500' : 'bg-zinc-800 border-zinc-600 group-hover:border-zinc-500'}`}>
@@ -390,7 +379,6 @@ function App() {
         {/* Snapshots */}
         {snapshots.length > 0 && (
           <section className="pt-8 border-t border-zinc-800">
-            {/* ★修正: ZIPダウンロードボタンを追加 */}
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold flex items-center gap-2 text-zinc-300">
                 Snapshots <span className="bg-zinc-800 text-xs px-2 py-0.5 rounded-full text-zinc-500">{snapshots.length}</span>
@@ -427,7 +415,6 @@ function App() {
                       </button>
                     </div>
                     
-                    {/* ★修正: Luminance情報を表示に追加 */}
                     <div className="flex flex-wrap items-center gap-2 mb-4">
                       <span className="text-xs font-bold px-2 py-0.5 bg-zinc-800 text-zinc-300 rounded uppercase">{snap.method}</span>
                       <span className="text-xs text-zinc-500">{Math.round(snap.intensity * 100)}%</span>
@@ -451,7 +438,7 @@ function App() {
           </section>
         )}
       
-        {/* ★追加: ヘルプモーダル */}
+        {/* Help Modal */}
         {showHelp && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
             <div className="bg-zinc-900 border border-zinc-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative">

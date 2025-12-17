@@ -1,23 +1,25 @@
 services:
-  # Python (FastAPI) 側
   backend:
     build: ./backend
-    container_name: color-backend
+    # ★修正点1: ポートマッピングを変更
+    # "ホストのポート:コンテナのポート"
     ports:
-      - "8000:8000"
+      - "8000:7860" 
     volumes:
-      - ./backend:/app  # ホストのコードをコンテナに同期
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+      - ./backend:/app
+    # ★修正点2: ローカル開発用コマンドで上書き
+    # コンテナ内は7860で動かしつつ、ホットリロード(--reload)を有効にする
+    command: uvicorn main:app --host 0.0.0.0 --port 7860 --reload
+    environment:
+      - CHOKIDAR_USEPOLLING=true
 
-  # React 側
   frontend:
+    # (フロントエンドの設定は変更なしでOKですが、念のためAPI先を確認)
     build: ./frontend
-    container_name: color-frontend
     ports:
-      - "5173:5173"  # Viteのデフォルトポート
+      - "5173:5173"
     volumes:
-      - ./frontend:/app         # ホストのコードを同期
-      - /app/node_modules       # ★超重要: コンテナ内のライブラリをホストで上書きしない設定
-    command: sh -c "npm install && npm run dev -- --host"  # --hostがないとブラウザから見えません
-    stdin_open: true  # これがないと終了してしまうことがあります
-    tty: true
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm run dev -- --host
+    # ...他はそのまま

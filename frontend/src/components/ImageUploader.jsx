@@ -1,23 +1,15 @@
 import React from 'react';
 import { Download, Image as ImageIcon } from 'lucide-react';
 
-const ImageUploader = ({ label, sub, preview, color, border, onDrop }) => {
-
-  // inputタグ(クリック選択)からの入力を、ドラッグ&ドロップと同じ形式に変換して親に渡すヘルパー
-  const handleInputChange = (e) => {
-    const mockEvent = {
-      preventDefault: () => { },
-      dataTransfer: { files: e.target.files }
-    };
-    onDrop(mockEvent);
-  };
-
+// ★変更: onSelect プロップを追加
+const ImageUploader = ({ label, sub, preview, color, border, onDrop, onSelect }) => {
+  
   return (
     <div className="space-y-3">
       <h3 className={`font-bold flex items-center gap-2 ${color}`}>
         <ImageIcon size={18} /> {label} <span className="text-zinc-600 text-xs font-normal">/ {sub}</span>
       </h3>
-      <div
+      <div 
         className={`
           aspect-video rounded-2xl border-2 border-dashed border-zinc-800 bg-zinc-900/50 
           flex items-center justify-center overflow-hidden relative group transition-all duration-300
@@ -39,10 +31,11 @@ const ImageUploader = ({ label, sub, preview, color, border, onDrop }) => {
             <p className="text-sm">Drag & Drop or Click</p>
           </div>
         )}
-        <input
-          type="file"
-          className="absolute inset-0 opacity-0 cursor-pointer z-50"
-          onChange={handleInputChange}
+        {/* ★変更: onChangeにはonSelectを直接渡す */}
+        <input 
+          type="file" 
+          className="absolute inset-0 opacity-0 cursor-pointer z-50" 
+          onChange={onSelect} 
         />
       </div>
     </div>

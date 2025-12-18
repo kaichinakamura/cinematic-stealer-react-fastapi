@@ -1,6 +1,9 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Download, Trash2, Camera, RefreshCw, ArrowRight, Layers, Image as ImageIcon, Sparkles, Archive, Loader2, HelpCircle, X } from 'lucide-react';
 import JSZip from 'jszip'; 
+import CompareSlider from './components/CompareSlider';
+import Header from './components/Header';
+import ImageUploader from './components/ImageUploader'; // ★追加: ImageUploaderをインポート
 
 // const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 const API_BASE_URL = import.meta.env.VITE_API_URL;
@@ -16,81 +19,6 @@ const ALGORITHMS = [
   {id: 'covariance', label: 'Covariance', desc: '色の相関を維持。鮮やかさを保ちたい場合に。'},
   {id: 'kmeans', label: 'Clustering AI', desc: '主要色を解析して置換。ポスターのような効果。'},
 ];
-
-// ==========================================
-// コンポーネント: 比較スライダー
-// ==========================================
-const CompareSlider = ({ original, processed, opacity }) => {
-  const [sliderPosition, setSliderPosition] = useState(50);
-  const [isDragging, setIsDragging] = useState(false);
-  const containerRef = useRef(null);
-
-  const handleMouseDown = (e) => { setIsDragging(true); updatePosition(e.clientX); };
-  const handleMouseUp = () => setIsDragging(false);
-  const handleMouseMove = (e) => { if (isDragging) updatePosition(e.clientX); };
-  
-  const handleTouchStart = (e) => { setIsDragging(true); updatePosition(e.touches[0].clientX); };
-  const handleTouchMove = (e) => { if (isDragging) updatePosition(e.touches[0].clientX); };
-  const handleTouchEnd = () => setIsDragging(false);
-
-  const updatePosition = (clientX) => {
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
-    setSliderPosition((x / rect.width) * 100);
-  };
-
-  return (
-    <div 
-      ref={containerRef}
-      className="relative w-full h-full select-none overflow-hidden rounded-xl border border-zinc-700 shadow-2xl cursor-ew-resize bg-zinc-950"
-      onMouseDown={handleMouseDown}
-      onMouseUp={handleMouseUp}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseUp}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-    >
-      <img 
-        src={original} 
-        alt="Original Base" 
-        className="absolute inset-0 w-full h-full object-contain pointer-events-none" 
-      />
-      <img 
-        src={processed} 
-        alt="Processed Overlay" 
-        className="absolute inset-0 w-full h-full object-contain pointer-events-none" 
-        style={{ opacity: opacity }} 
-      />
-      <div 
-        className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none"
-        style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
-      >
-        <img 
-          src={original} 
-          alt="Original Left" 
-          className="absolute inset-0 w-full h-full object-contain"
-        />
-        <div className="absolute inset-0 shadow-[0_0_20px_rgba(0,0,0,0.5)] pointer-events-none"></div>
-      </div>
-      <div 
-        className="absolute top-0 bottom-0 w-0.5 bg-white cursor-col-resize z-20 pointer-events-none drop-shadow-[0_0_2px_rgba(0,0,0,0.8)]"
-        style={{ left: `${sliderPosition}%` }}
-      >
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-white text-zinc-900 rounded-full flex items-center justify-center shadow-lg text-xs font-bold border-2 border-zinc-200">
-          ↔
-        </div>
-      </div>
-      <div className="absolute bottom-4 left-4 bg-black/60 text-white text-xs px-2 py-1 rounded pointer-events-none backdrop-blur-sm border border-white/10">
-        Original
-      </div>
-      <div className="absolute bottom-4 right-4 bg-black/60 text-white text-xs px-2 py-1 rounded pointer-events-none backdrop-blur-sm border border-white/10">
-        Result
-      </div>
-    </div>
-  );
-};
 
 // ==========================================
 // メインアプリ
@@ -244,32 +172,7 @@ function App() {
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans selection:bg-purple-500 selection:text-white">
       <div className="max-w-7xl mx-auto p-6 space-y-12">
         
-        {/* Header */}
-        <header className="flex flex-col md:flex-row justify-between items-center border-b border-zinc-800 pb-6 gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-gradient-to-tr from-purple-600 to-blue-500 rounded-xl shadow-lg shadow-purple-900/20">
-              <Sparkles className="text-white" size={24} />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-zinc-100 to-zinc-400">
-                Cinematic Color Stealer
-              </h1>
-              <p className="text-zinc-500 text-sm">AI-Powered Color Grading Tool</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={() => setShowHelp(true)} 
-              className="p-2.5 rounded-full text-zinc-400 hover:text-white hover:bg-zinc-900 border border-transparent hover:border-zinc-700 transition-all"
-              title="How to use"
-            >
-              <HelpCircle size={20} />
-            </button>
-            <button onClick={handleSwap} className="flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-300 px-5 py-2.5 rounded-full transition-all hover:border-zinc-500 active:scale-95 text-sm font-medium">
-              <RefreshCw size={16} /> Swap Images
-            </button>
-          </div>
-        </header>
+        <Header onShowHelp={() => setShowHelp(true)} onSwap={handleSwap} />
 
         {/* Step 1: D&D Area */}
         <section className="space-y-6">
@@ -279,39 +182,20 @@ function App() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* ★修正: ループの中身をコンポーネント化し、劇的にスッキリさせました */}
             {[
               { id: 'target', label: 'Target Image', sub: '変えたい画像', preview: targetPreview, color: 'text-purple-400', border: 'hover:border-purple-500/50 hover:bg-purple-500/5' },
               { id: 'reference', label: 'Reference Image', sub: '憧れの色味', preview: refPreview, color: 'text-blue-400', border: 'hover:border-blue-500/50 hover:bg-blue-500/5' }
             ].map((area) => (
-              <div key={area.id} className="space-y-3">
-                <h3 className={`font-bold flex items-center gap-2 ${area.color}`}>
-                  <ImageIcon size={18} /> {area.label} <span className="text-zinc-600 text-xs font-normal">/ {area.sub}</span>
-                </h3>
-                <div 
-                  className={`
-                    aspect-video rounded-2xl border-2 border-dashed border-zinc-800 bg-zinc-900/50 
-                    flex items-center justify-center overflow-hidden relative group transition-all duration-300
-                    ${area.border}
-                  `}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) => handleDrop(e, area.id)}
-                >
-                  {area.preview ? (
-                    <>
-                      <img src={area.preview} className="w-full h-full object-contain z-10" alt={area.label} />
-                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-20 pointer-events-none">
-                        <p className="text-white font-medium">Replace Image</p>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="text-zinc-600 text-center pointer-events-none group-hover:text-zinc-400 transition-colors">
-                      <Download className="mx-auto mb-2 opacity-50" size={32} />
-                      <p className="text-sm">Drag & Drop or Click</p>
-                    </div>
-                  )}
-                  <input type="file" className="absolute inset-0 opacity-0 cursor-pointer z-50" onChange={(e) => handleDrop({preventDefault:()=>{}, dataTransfer:{files: e.target.files}}, area.id)} />
-                </div>
-              </div>
+              <ImageUploader
+                key={area.id}
+                label={area.label}
+                sub={area.sub}
+                preview={area.preview}
+                color={area.color}
+                border={area.border}
+                onDrop={(e) => handleDrop(e, area.id)}
+              />
             ))}
           </div>
         </section>

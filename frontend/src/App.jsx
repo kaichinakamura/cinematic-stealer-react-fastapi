@@ -1,17 +1,20 @@
 import React, { useState } from 'react';
-import { Camera, Layers } from 'lucide-react'; // 残ったアイコンのみインポート
+import { Camera, Layers } from 'lucide-react'; 
 import CompareSlider from './components/CompareSlider';
 import Header from './components/Header';
 import ImageUploader from './components/ImageUploader';
-import ControlPanel from './components/ControlPanel'; // ★追加
-import SnapshotGallery from './components/SnapshotGallery'; // ★追加
-import HelpModal from './components/HelpModal'; // ★追加
+import ControlPanel from './components/ControlPanel'; 
+import SnapshotGallery from './components/SnapshotGallery'; 
+import HelpModal from './components/HelpModal'; 
 import { useImageProcessor } from './hooks/useImageProcessor';
+import { useTranslation } from './contexts/LanguageContext'; // ★追加
 
 // ==========================================
 // メインアプリ
 // ==========================================
 function App() {
+  const { t } = useTranslation(); // ★追加
+  
   const {
     targetFile, targetPreview,
     refFile, refPreview,
@@ -43,13 +46,14 @@ function App() {
         <section className="space-y-6">
           <div className="flex items-center gap-3">
             <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300 font-bold text-sm shadow-inner">1</div>
-            <h2 className="text-xl font-bold text-zinc-200">Upload Images</h2>
+            <h2 className="text-xl font-bold text-zinc-200">{t('upload.step')}</h2> {/* ★翻訳 */}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {[
-              { id: 'target', label: 'Target Image', sub: '変えたい画像', preview: targetPreview, color: 'text-purple-400', border: 'hover:border-purple-500/50 hover:bg-purple-500/5' },
-              { id: 'reference', label: 'Reference Image', sub: '憧れの色味', preview: refPreview, color: 'text-blue-400', border: 'hover:border-blue-500/50 hover:bg-blue-500/5' }
+              // ★変更: t()を使ってラベルを翻訳
+              { id: 'target', label: t('upload.target_label'), sub: t('upload.target_sub'), preview: targetPreview, color: 'text-purple-400', border: 'hover:border-purple-500/50 hover:bg-purple-500/5' },
+              { id: 'reference', label: t('upload.ref_label'), sub: t('upload.ref_sub'), preview: refPreview, color: 'text-blue-400', border: 'hover:border-blue-500/50 hover:bg-blue-500/5' }
             ].map((area) => (
               <ImageUploader
                 key={area.id}
@@ -65,7 +69,7 @@ function App() {
           </div>
         </section>
 
-        {/* Step 2: Controls (コンポーネント化) */}
+        {/* Step 2: Controls */}
         <ControlPanel 
           method={method}
           setMethod={setMethod}
@@ -76,16 +80,16 @@ function App() {
           disabled={isLoading || !targetFile || !refFile}
         />
 
-        {/* Step 3: Result Area (ここはまだApp.jsxに残しています) */}
+        {/* Step 3: Result Area (まだApp.jsx内) */}
         {processedPreview && (
           <section className="animate-in fade-in slide-in-from-bottom-8 duration-700 space-y-6">
             <div className="flex justify-between items-end">
               <div className="flex items-center gap-3">
                 <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300 font-bold text-sm shadow-inner">3</div>
-                <h2 className="text-2xl font-bold text-zinc-200">Result</h2>
+                <h2 className="text-2xl font-bold text-zinc-200">{t('result.step')}</h2> {/* ★翻訳 */}
               </div>
               <button onClick={() => takeSnapshot(blendOpacity)} className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition border border-zinc-700">
-                <Camera size={16}/> Snapshot
+                <Camera size={16}/> {t('result.snapshot_btn')} {/* ★翻訳 */}
               </button>
             </div>
             <div className="bg-zinc-950 rounded-2xl shadow-2xl overflow-hidden border border-zinc-800 aspect-video relative">
@@ -95,7 +99,7 @@ function App() {
               <Layers className="text-purple-400" />
               <div className="flex-1">
                 <div className="flex justify-between text-xs mb-2 text-zinc-400">
-                  <span>Effect Opacity (Blend)</span>
+                  <span>{t('result.opacity')}</span> {/* ★翻訳 */}
                   <span className="font-mono text-zinc-200">{Math.round(blendOpacity * 100)}%</span>
                 </div>
                 <input type="range" min="0" max="1" step="0.01" value={blendOpacity} onChange={(e) => setBlendOpacity(parseFloat(e.target.value))} className="w-full h-1.5 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-purple-500" />
@@ -104,7 +108,7 @@ function App() {
           </section>
         )}
 
-        {/* Snapshots (コンポーネント化) */}
+        {/* Snapshots */}
         {snapshots.length > 0 && (
           <SnapshotGallery 
             snapshots={snapshots}
@@ -115,7 +119,7 @@ function App() {
           />
         )}
       
-        {/* Help Modal (コンポーネント化) */}
+        {/* Help Modal */}
         {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
 
       </div>

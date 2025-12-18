@@ -1,5 +1,6 @@
 import React from 'react';
 import { Archive, Loader2, Trash2, Download } from 'lucide-react';
+import { useTranslation } from '../contexts/LanguageContext'; // ★追加
 
 const SnapshotGallery = ({ 
   snapshots, 
@@ -8,11 +9,13 @@ const SnapshotGallery = ({
   isZipping, 
   onDownloadLut 
 }) => {
+  const { t } = useTranslation(); // ★追加
+
   return (
     <section className="pt-8 border-t border-zinc-800">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold flex items-center gap-2 text-zinc-300">
-          Snapshots <span className="bg-zinc-800 text-xs px-2 py-0.5 rounded-full text-zinc-500">{snapshots.length}</span>
+          {t('result.snapshots_title')} <span className="bg-zinc-800 text-xs px-2 py-0.5 rounded-full text-zinc-500">{snapshots.length}</span> {/* ★翻訳 */}
         </h2>
         {snapshots.length > 1 && (
           <button 
@@ -21,7 +24,7 @@ const SnapshotGallery = ({
             className="text-sm bg-purple-600/20 text-purple-300 hover:bg-purple-600/30 border border-purple-500/30 px-4 py-2 rounded-full flex items-center gap-2 transition"
           >
             {isZipping ? <Loader2 className="animate-spin" size={16} /> : <Archive size={16} />}
-            Download All as ZIP
+            {t('result.download_zip')} {/* ★翻訳 */}
           </button>
         )}
       </div>

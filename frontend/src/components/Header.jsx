@@ -1,7 +1,10 @@
 import React from 'react';
-import { Sparkles, HelpCircle, RefreshCw } from 'lucide-react';
+import { Sparkles, HelpCircle, RefreshCw, Languages } from 'lucide-react';
+import { useTranslation } from '../contexts/LanguageContext';
 
 const Header = ({ onShowHelp, onSwap }) => {
+  const { toggleLanguage, lang } = useTranslation();
+
   return (
     <header className="flex flex-col md:flex-row justify-between items-center border-b border-zinc-800 pb-6 gap-4">
       <div className="flex items-center gap-3">
@@ -16,8 +19,18 @@ const Header = ({ onShowHelp, onSwap }) => {
         </div>
       </div>
       <div className="flex items-center gap-3">
-        <button
-          onClick={onShowHelp}
+        {/* ★追加: 言語切り替えボタン */}
+        <button 
+          onClick={toggleLanguage} 
+          className="p-2.5 rounded-full text-zinc-400 hover:text-white hover:bg-zinc-900 border border-transparent hover:border-zinc-700 transition-all flex items-center gap-1"
+          title="Switch Language"
+        >
+          <Languages size={20} />
+          <span className="text-xs font-bold w-4">{lang === 'ja' ? 'JP' : 'EN'}</span>
+        </button>
+
+        <button 
+          onClick={onShowHelp} 
           className="p-2.5 rounded-full text-zinc-400 hover:text-white hover:bg-zinc-900 border border-transparent hover:border-zinc-700 transition-all"
           title="How to use"
         >

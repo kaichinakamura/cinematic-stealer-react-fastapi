@@ -1,7 +1,10 @@
 import React from 'react';
 import { X, Sparkles } from 'lucide-react';
+import { useTranslation } from '../contexts/LanguageContext'; // ★追加
 
 const HelpModal = ({ onClose }) => {
+  const { t } = useTranslation(); // ★追加
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
       <div className="bg-zinc-900 border border-zinc-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative">
@@ -13,18 +16,16 @@ const HelpModal = ({ onClose }) => {
         </button>
         
         <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-          <Sparkles className="text-purple-500" size={20}/> Quick Guide
+          <Sparkles className="text-purple-500" size={20}/> {t('help.title')} {/* ★翻訳 */}
         </h2>
         
         <div className="space-y-6">
           <div className="flex gap-4">
             <div className="flex-shrink-0 w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center font-bold text-zinc-400 border border-zinc-700">1</div>
             <div>
-              <h3 className="text-zinc-200 font-bold mb-1">Upload Images</h3>
+              <h3 className="text-zinc-200 font-bold mb-1">{t('help.step1_title')}</h3> {/* ★翻訳 */}
               <p className="text-zinc-400 text-sm leading-relaxed">
-                <span className="text-purple-400 font-medium">Target</span>（変えたい画像）と
-                <span className="text-blue-400 font-medium"> Reference</span>（真似したい色味）
-                をそれぞれドラッグ&ドロップします。
+                {t('help.step1_desc')} {/* ★翻訳 */}
               </p>
             </div>
           </div>
@@ -32,10 +33,9 @@ const HelpModal = ({ onClose }) => {
           <div className="flex gap-4">
             <div className="flex-shrink-0 w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center font-bold text-zinc-400 border border-zinc-700">2</div>
             <div>
-              <h3 className="text-zinc-200 font-bold mb-1">Select & Create</h3>
+              <h3 className="text-zinc-200 font-bold mb-1">{t('help.step2_title')}</h3> {/* ★翻訳 */}
               <p className="text-zinc-400 text-sm leading-relaxed">
-                好みのAlgorithmを選び、<span className="text-zinc-200 bg-zinc-800 px-1.5 py-0.5 rounded text-xs border border-zinc-700">Create Result</span> を押します。
-                Histogramが最も汎用的でおすすめです。
+                {t('help.step2_desc')} {/* ★翻訳 */}
               </p>
             </div>
           </div>
@@ -43,10 +43,9 @@ const HelpModal = ({ onClose }) => {
           <div className="flex gap-4">
             <div className="flex-shrink-0 w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center font-bold text-zinc-400 border border-zinc-700">3</div>
             <div>
-              <h3 className="text-zinc-200 font-bold mb-1">Snapshot & LUT</h3>
+              <h3 className="text-zinc-200 font-bold mb-1">{t('help.step3_title')}</h3> {/* ★翻訳 */}
               <p className="text-zinc-400 text-sm leading-relaxed">
-                結果が気に入ればSnapshotで保存。
-                あとから画像や3D LUT (.cube) としてダウンロードできます。
+                {t('help.step3_desc')} {/* ★翻訳 */}
               </p>
             </div>
           </div>
